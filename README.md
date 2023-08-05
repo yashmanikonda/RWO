@@ -8,6 +8,7 @@ I will keep updating it whenever it's possible.
 1) Add more cases so the tool is fully automated:
    
 Case 1: Allow the user to give input again if the credentials are wrong. - [Solved 05-08-2023] 
+
 Case 2: Automate the Login request while deleting a repository.
 
 3) Give users the option to delete selected repositories.

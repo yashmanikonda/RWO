@@ -7,9 +7,10 @@ from selenium.webdriver.support import expected_conditions as EC
 options = webdriver.ChromeOptions()
 driver = webdriver.Chrome()
 
-login_element_input = input("Enter your GitHub username: ")
-
-password_element_input = input("Enter your GitHub password: ")
+def get_login_credentials():
+    login_element_input = input("Enter your GitHub username: ")
+    password_element_input = input("Enter your GitHub password: ")
+    return login_element_input, password_element_input
 
 def get_repository_links():
     # Wait for the repositories list to load
@@ -23,31 +24,35 @@ def get_repository_links():
     # Extract and return the repository URLs
     return [link.get_attribute('href') for link in links]
 
-try:
-    driver.maximize_window()
-    driver.get('https://github.com/login')
+if __name__ == "__main__":
+    authenticated = False
+    while not authenticated:
+        login_element_input, password_element_input = get_login_credentials()
+        driver.maximize_window()
+        driver.get('https://github.com/login')
 
+        login_element = driver.find_element(By.ID, 'login_field')
+        login_element.clear()
+        login_element.send_keys(login_element_input)
 
-    login_element = driver.find_element(By.ID, 'login_field')
-    login_element.clear()
-    login_element.send_keys(login_element_input)
+        password_element = driver.find_element(By.ID, 'password')
+        password_element.clear()
+        password_element.send_keys(password_element_input)
 
-    password_element = driver.find_element(By.ID, 'password')
-    password_element.clear()
-    password_element.send_keys(password_element_input)
+        sign_in_button = driver.find_element(By.CLASS_NAME, 'js-sign-in-button')
+        sign_in_button.click()
 
-    sign_in_button = driver.find_element(By.CLASS_NAME, 'js-sign-in-button')
-    sign_in_button.click()
+        try:
+            error_message = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'js-flash-alert'))
+            )
+            print("Incorrect username or password")
 
+        except TimeoutException:
+            authenticated = True
 
-    error_message = WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.CLASS_NAME, 'js-flash-alert'))
-    )
-
-    print("Incorrect username or password")
-
-except TimeoutException:
-    print("No errors in given credentials")
+        except NoSuchElementException:
+            authenticated = True
 
     profile_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.CLASS_NAME, 'AppHeader-user'))
@@ -114,5 +119,4 @@ except TimeoutException:
 
     print("All repositories deleted.")
 
-finally:
     driver.quit()

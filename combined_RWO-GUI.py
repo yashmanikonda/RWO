@@ -1,5 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout, QPushButton, QHBoxLayout, QCheckBox
+from PyQt5 import Qt
 from selenium import webdriver
 from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
@@ -21,6 +22,23 @@ def get_repository_links():
     # Extract and return the repository URLs
     return [link.get_attribute('href') for link in links]
 
+class ErrorHandlingApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Error Handling")
+        self.setGeometry(400, 400, 300, 100)
+
+        error_label = QLabel("Incorrect Username or Password")
+        self.popup_button = QPushButton("close")
+
+        layout = QVBoxLayout()
+        layout.addWidget(error_label)
+        self.setLayout(layout)
+
+
 class LoginApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -37,6 +55,10 @@ class LoginApp(QWidget):
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
 
+        self.show_password_checkbox = QCheckBox("Show Password")
+        self.show_password_checkbox.stateChanged.connect(self.toggle_password_visibility)
+
+
         self.login_button = QPushButton("Login")
         self.close_button = QPushButton("Exit")
 
@@ -45,6 +67,7 @@ class LoginApp(QWidget):
         layout.addWidget(self.username_input)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
+        layout.addWidget(self.show_password_checkbox)
         layout.addWidget(self.login_button)
         layout.addWidget(self.close_button)
 
@@ -52,12 +75,21 @@ class LoginApp(QWidget):
         self.login_button.clicked.connect(self.on_login)
         self.close_button.clicked.connect(self.close_app)
 
+    def toggle_password_visibility(self, state):
+        if self.show_password_checkbox.isChecked():
+            self.password_input.setEchoMode(QLineEdit.Normal)
+        else:
+            self.password_input.setEchoMode(QLineEdit.Password)
+
+
     def on_login(self):
             username = self.username_input.text()
             password = self.password_input.text()
 
             driver.maximize_window()
             driver.get('https://github.com/login')
+
+            authenticated = False
 
             try:
                 username_element = driver.find_element(By.ID, 'login_field')
@@ -75,7 +107,8 @@ class LoginApp(QWidget):
                     error_message = WebDriverWait(driver, 2).until(
                         EC.presence_of_element_located((By.CLASS_NAME, 'js-flash-alert'))
                     )
-                    print("Incorrect username or password")
+                    error_popup = ErrorHandlingApp()
+                    error_popup.show()
 
                 except TimeoutException:
                     authenticated = True
@@ -84,7 +117,11 @@ class LoginApp(QWidget):
                     authenticated = True
                     print("Login Successful")
 
+
                 if authenticated:
+
+                    self.layout().removeWidget(self.login_button)
+
 
                     profile_button = WebDriverWait(driver, 10).until(
                         EC.element_to_be_clickable((By.CLASS_NAME, 'AppHeader-user'))
@@ -97,9 +134,10 @@ class LoginApp(QWidget):
                     )
                     repo_button.click()
 
+
             finally:
-                driver.quit()
-            
+                pass
+
     def close_app(self):
         QApplication.quit()
 
@@ -107,5 +145,11 @@ class LoginApp(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = LoginApp()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ErrorHandlingApp()
     window.show()
     sys.exit(app.exec_())

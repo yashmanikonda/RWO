@@ -1,5 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout, QPushButton, QHBoxLayout, QCheckBox
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout, QPushButton, QHBoxLayout, QCheckBox, QDialog, QStyle
 from PyQt5 import Qt
 from selenium import webdriver
 from selenium.common import NoSuchElementException, TimeoutException
@@ -22,22 +23,19 @@ def get_repository_links():
     # Extract and return the repository URLs
     return [link.get_attribute('href') for link in links]
 
-class ErrorHandlingApp(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
 
-    def initUI(self):
-        self.setWindowTitle("Error Handling")
-        self.setGeometry(400, 400, 300, 100)
-
-        error_label = QLabel("Incorrect Username or Password")
-        self.popup_button = QPushButton("close")
+class CustomErrorDialog(QDialog):
+    def __init__(self, message, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Error")
 
         layout = QVBoxLayout()
-        layout.addWidget(error_label)
-        self.setLayout(layout)
+        layout.addWidget(QLabel(message))
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button)
 
+        self.setLayout(layout)
 
 class LoginApp(QWidget):
     def __init__(self):
@@ -81,10 +79,21 @@ class LoginApp(QWidget):
         else:
             self.password_input.setEchoMode(QLineEdit.Password)
 
+    def show_error_message(self):
+        error_dialog = CustomErrorDialog("Incorrect username or password", self)
+        error_dialog.exec_()
+
+    def no_credentials_error(self):
+        error_dialog = CustomErrorDialog("Please enter your username and password", self)
+        error_dialog.exec_()
 
     def on_login(self):
             username = self.username_input.text()
             password = self.password_input.text()
+
+            if not username or not password:
+                self.no_credentials_error()
+                return 
 
             driver.maximize_window()
             driver.get('https://github.com/login')
@@ -107,8 +116,7 @@ class LoginApp(QWidget):
                     error_message = WebDriverWait(driver, 2).until(
                         EC.presence_of_element_located((By.CLASS_NAME, 'js-flash-alert'))
                     )
-                    error_popup = ErrorHandlingApp()
-                    error_popup.show()
+                    self.show_error_message()
 
                 except TimeoutException:
                     authenticated = True
@@ -148,8 +156,3 @@ if __name__ == "__main__":
     window.show()
     sys.exit(app.exec_())
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = ErrorHandlingApp()
-    window.show()
-    sys.exit(app.exec_())

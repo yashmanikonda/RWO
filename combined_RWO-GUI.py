@@ -37,6 +37,7 @@ class CustomErrorDialog(QDialog):
 
         self.setLayout(layout)
 
+
 class LoginApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -59,6 +60,8 @@ class LoginApp(QWidget):
 
         self.login_button = QPushButton("Login")
         self.close_button = QPushButton("Exit")
+
+        self.repo_checkboxes = []
 
         layout = QVBoxLayout()
         layout.addWidget(self.username_label)
@@ -87,13 +90,20 @@ class LoginApp(QWidget):
         error_dialog = CustomErrorDialog("Please enter your username and password", self)
         error_dialog.exec_()
 
+    def clear_layout(self):
+        for i in reversed(range(self.layout().count())):
+            widget = self.layout().itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+
     def on_login(self):
             username = self.username_input.text()
             password = self.password_input.text()
 
             if not username or not password:
                 self.no_credentials_error()
-                return 
+                return
 
             driver.maximize_window()
             driver.get('https://github.com/login')
@@ -128,8 +138,7 @@ class LoginApp(QWidget):
 
                 if authenticated:
 
-                    self.layout().removeWidget(self.login_button)
-
+                    self.clear_layout()
 
                     profile_button = WebDriverWait(driver, 10).until(
                         EC.element_to_be_clickable((By.CLASS_NAME, 'AppHeader-user'))
@@ -141,7 +150,6 @@ class LoginApp(QWidget):
                                                     f'//span[@data-view-component="true" and contains(@class, "ActionListItem-label") and contains(text(), "Your repositories")]'))
                     )
                     repo_button.click()
-
 
             finally:
                 pass
